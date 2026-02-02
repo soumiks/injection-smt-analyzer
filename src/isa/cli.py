@@ -2,6 +2,7 @@ import argparse
 import json
 
 from isa.benchmarks.undici_crlf import demo_witness
+from isa.benchmarks.undici_crlf_proof import prove_witness
 
 
 def main(argv=None) -> int:
@@ -20,7 +21,13 @@ def main(argv=None) -> int:
     p_analyze.add_argument(
         "--rev",
         default="v5.8.0",
-        help="Target revision/tag for witness metadata (default: v5.8.0)",
+        help="Target revision/tag for analysis (default: v5.8.0)",
+    )
+    p_analyze.add_argument(
+        "--mode",
+        default="prove",
+        choices=["prove", "demo"],
+        help="prove=SMT+Z3-backed (best effort), demo=placeholder witness",
     )
 
     args = parser.parse_args(argv)
@@ -31,8 +38,17 @@ def main(argv=None) -> int:
 
     if args.cmd == "analyze":
         if args.benchmark == "undici_crlf":
-            w = demo_witness(args.rev)
-            print(json.dumps(w.to_dict(), indent=2, sort_keys=True))
+            if args.mode == "demo":
+                w = demo_witness(args.rev)
+                print(json.dumps(w.to_dict(), indent=2, sort_keys=True))
+                return 0
+
+            w = prove_witness(args.rev)
+            if w is None:
+                print(json.dumps({"ok": True, "vulnerable": False, "rev": args.rev}, indent=2, sort_keys=True))
+                return 0
+
+            print(json.dumps({"ok": True, "vulnerable": True, "witness": w.to_dict()}, indent=2, sort_keys=True))
             return 0
 
     raise AssertionError("unreachable")

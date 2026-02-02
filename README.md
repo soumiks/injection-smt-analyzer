@@ -17,7 +17,8 @@ This repo will evolve milestone-by-milestone.
 
 - Milestone 0: repo skeleton + tooling ✅
 - Milestone 1: undici CRLF benchmark harness ✅
-- Milestone 2: witness schema + `isa analyze` stub (in progress)
+- Milestone 2: witness schema + `isa analyze` stub ✅
+- Milestone 3: undici CRLF proof mode (SMT2+Z3 best-effort) (in progress)
 
 ## Dev setup
 
