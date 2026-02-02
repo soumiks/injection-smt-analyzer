@@ -15,7 +15,23 @@ This repo will evolve milestone-by-milestone.
 
 ## Status
 
-Milestone 0: repo skeleton + tooling (in progress).
+- Milestone 0: repo skeleton + tooling ✅
+- Milestone 1: undici CRLF benchmark harness ✅
+- Milestone 2: witness schema + `isa analyze` stub (in progress)
+
+## Dev setup
+
+macOS/Homebrew Python uses PEP 668 (externally-managed env). Use a venv:
+
+```bash
+make venv
+```
+
+Quick demo (prints a placeholder witness JSON):
+
+```bash
+make demo
+```
 
 ## License
 

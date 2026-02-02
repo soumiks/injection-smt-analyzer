@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/soumiks/injection-smt-analyzer/blob/main/docs/witness.schema.json",
+  "title": "Injection Witness",
+  "type": "object",
+  "required": ["target", "vuln", "source", "sink", "call_chain"],
+  "properties": {
+    "target": {
+      "type": "object",
+      "required": ["repo", "rev"],
+      "properties": {
+        "repo": {"type": "string"},
+        "rev": {"type": "string"}
+      }
+    },
+    "vuln": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {"type": "string"},
+        "advisory": {"type": "string"},
+        "cwe": {"type": "string"}
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["kind", "location"],
+      "properties": {
+        "kind": {"type": "string"},
+        "location": {"$ref": "#/definitions/location"},
+        "notes": {"type": "string"}
+      }
+    },
+    "sink": {
+      "type": "object",
+      "required": ["kind", "location"],
+      "properties": {
+        "kind": {"type": "string"},
+        "location": {"$ref": "#/definitions/location"},
+        "notes": {"type": "string"}
+      }
+    },
+    "call_chain": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/location"}
+    },
+    "path_constraints": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "smt2": {
+      "type": "string",
+      "description": "Optional SMT2 emitted for this witness"
+    },
+    "z3_model": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional satisfying assignment from Z3"
+    }
+  },
+  "definitions": {
+    "location": {
+      "type": "object",
+      "required": ["file"],
+      "properties": {
+        "file": {"type": "string"},
+        "line": {"type": "integer"},
+        "col": {"type": "integer"},
+        "function": {"type": "string"}
+      }
+    }
+  }
+}
