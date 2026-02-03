@@ -517,6 +517,61 @@ PUG_PRETTY = BenchmarkConfig(
 )
 
 
+# =============================================================================
+# Benchmark: JSON5 prototype pollution (CVE-2022-46175)
+# =============================================================================
+
+JSON5_PROTO = BenchmarkConfig(
+    id="json5_proto",
+    name="JSON5 prototype pollution via __proto__",
+    repo="https://github.com/json5/json5",
+    language=Language.JAVASCRIPT,
+    vuln_type=VulnType.PROTOTYPE_POLLUTION,
+    advisory="CVE-2022-46175",
+    cwe="CWE-1321",
+    
+    sources=[
+        SourceSpec(
+            kind="json_input",
+            pattern="JSON5.parse",
+            description="JSON5 string input to parse()",
+        ),
+    ],
+    
+    sinks=[
+        SinkSpec(
+            kind="property_assignment",
+            pattern="parent[key] = value",
+            description="Direct property assignment enabling __proto__ pollution",
+        ),
+    ],
+    
+    sanitizers=[
+        SanitizerSpec(
+            pattern="Object.defineProperty",
+            description="Safe property assignment via defineProperty",
+        ),
+    ],
+    
+    target_files=[
+        "lib/parse.js",
+    ],
+    
+    revisions=[
+        RevisionSpec(
+            tag="v2.2.1",
+            expected_vulnerable=True,
+            notes="Direct assignment allows __proto__ pollution",
+        ),
+        RevisionSpec(
+            tag="v2.2.2",
+            expected_vulnerable=False,
+            notes="Uses Object.defineProperty() to prevent pollution",
+        ),
+    ],
+)
+
+
 def register_all_benchmarks() -> None:
     """Register all benchmark configurations."""
     register_benchmark(UNDICI_CRLF)
@@ -527,6 +582,7 @@ def register_all_benchmarks() -> None:
     register_benchmark(HANDLEBARS_LOOKUP)
     register_benchmark(NODEMAILER_SENDMAIL)
     register_benchmark(PUG_PRETTY)
+    register_benchmark(JSON5_PROTO)
 
 
 # Auto-register when module is imported
