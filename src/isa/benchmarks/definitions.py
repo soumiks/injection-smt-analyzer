@@ -403,6 +403,61 @@ HANDLEBARS_LOOKUP = BenchmarkConfig(
 )
 
 
+# =============================================================================
+# Benchmark: Nodemailer command injection (CVE-2020-7769)
+# =============================================================================
+
+NODEMAILER_SENDMAIL = BenchmarkConfig(
+    id="nodemailer_sendmail",
+    name="Nodemailer sendmail command injection",
+    repo="https://github.com/nodemailer/nodemailer",
+    language=Language.JAVASCRIPT,
+    vuln_type=VulnType.COMMAND_INJECTION,
+    advisory="CVE-2020-7769",
+    cwe="CWE-77",
+    
+    sources=[
+        SourceSpec(
+            kind="email_address",
+            pattern="envelope.to",
+            description="Email address from mail options",
+        ),
+    ],
+    
+    sinks=[
+        SinkSpec(
+            kind="command_execution",
+            pattern="sendmail",
+            description="sendmail command execution",
+        ),
+    ],
+    
+    sanitizers=[
+        SanitizerSpec(
+            pattern="/^-/",
+            description="Dash prefix validation",
+        ),
+    ],
+    
+    target_files=[
+        "lib/sendmail-transport/index.js",
+    ],
+    
+    revisions=[
+        RevisionSpec(
+            tag="v6.4.15",
+            expected_vulnerable=True,
+            notes="No dash prefix validation",
+        ),
+        RevisionSpec(
+            tag="v6.4.16",
+            expected_vulnerable=False,
+            notes="Added hasInvalidAddresses check",
+        ),
+    ],
+)
+
+
 def register_all_benchmarks() -> None:
     """Register all benchmark configurations."""
     register_benchmark(UNDICI_CRLF)
@@ -411,6 +466,7 @@ def register_all_benchmarks() -> None:
     register_benchmark(SPRING4SHELL)
     register_benchmark(LARAVEL_IGNITION)
     register_benchmark(HANDLEBARS_LOOKUP)
+    register_benchmark(NODEMAILER_SENDMAIL)
 
 
 # Auto-register when module is imported
