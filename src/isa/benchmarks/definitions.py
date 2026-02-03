@@ -156,10 +156,85 @@ DJANGO_SQL = BenchmarkConfig(
 )
 
 
+# =============================================================================
+# Benchmark: Apache Log4j JNDI injection (CVE-2021-44228 / Log4Shell)
+# =============================================================================
+
+LOG4J_JNDI = BenchmarkConfig(
+    id="log4j_jndi",
+    name="Apache Log4j JNDI injection (Log4Shell)",
+    repo="https://github.com/apache/logging-log4j2",
+    language=Language.JAVA,
+    vuln_type=VulnType.JNDI_INJECTION,
+    advisory="CVE-2021-44228",
+    cwe="CWE-917",
+    
+    sources=[
+        SourceSpec(
+            kind="external_input",
+            pattern="param:message",
+            description="Log messages from external sources",
+        ),
+        SourceSpec(
+            kind="string_interpolation",
+            pattern="${jndi:",
+            description="JNDI lookup in string interpolation",
+        ),
+    ],
+    
+    sinks=[
+        SinkSpec(
+            kind="jndi_lookup",
+            pattern="call:context.lookup",
+            description="JNDI Context.lookup() execution",
+        ),
+        SinkSpec(
+            kind="jndi_lookup",
+            pattern="call:JndiManager.lookup",
+            description="JndiManager.lookup() execution",
+        ),
+    ],
+    
+    sanitizers=[
+        SanitizerSpec(
+            pattern="allowedProtocols.contains",
+            description="Protocol allowlist check",
+        ),
+        SanitizerSpec(
+            pattern="allowedHosts.contains",
+            description="Host allowlist check for LDAP",
+        ),
+        SanitizerSpec(
+            pattern="allowedClasses.contains",
+            description="Class allowlist for deserialization",
+        ),
+    ],
+    
+    target_files=[
+        "log4j-core/src/main/java/org/apache/logging/log4j/core/net/JndiManager.java",
+        "log4j-core/src/main/java/org/apache/logging/log4j/core/lookup/JndiLookup.java",
+    ],
+    
+    revisions=[
+        RevisionSpec(
+            tag="rel/2.14.1",
+            expected_vulnerable=True,
+            notes="No JNDI restrictions - Log4Shell vulnerable",
+        ),
+        RevisionSpec(
+            tag="rel/2.15.0",
+            expected_vulnerable=False,
+            notes="Added protocol/host/class allowlists",
+        ),
+    ],
+)
+
+
 def register_all_benchmarks() -> None:
     """Register all benchmark configurations."""
     register_benchmark(UNDICI_CRLF)
     register_benchmark(DJANGO_SQL)
+    register_benchmark(LOG4J_JNDI)
 
 
 # Auto-register when module is imported

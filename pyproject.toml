@@ -11,6 +11,9 @@ dependencies = [
   "tree-sitter>=0.21",
   "tree-sitter-javascript>=0.21",
   "tree-sitter-python>=0.21",
+  "tree-sitter-java>=0.21",
+  "tree-sitter-php>=0.21",
+  "tree-sitter-go>=0.21",
 ]
 
 [project.optional-dependencies]

@@ -16,6 +16,9 @@ from pathlib import Path
 class Language(Enum):
     JAVASCRIPT = "javascript"
     PYTHON = "python"
+    JAVA = "java"
+    PHP = "php"
+    GO = "go"
 
 
 class VulnType(Enum):
@@ -23,6 +26,8 @@ class VulnType(Enum):
     SQL_INJECTION = "sql-injection"
     COMMAND_INJECTION = "command-injection"
     PATH_TRAVERSAL = "path-traversal"
+    JNDI_INJECTION = "jndi-injection"
+    CODE_INJECTION = "code-injection"
 
 
 @dataclass(frozen=True)
