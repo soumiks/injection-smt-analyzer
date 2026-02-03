@@ -458,6 +458,65 @@ NODEMAILER_SENDMAIL = BenchmarkConfig(
 )
 
 
+# =============================================================================
+# Benchmark: Pug template injection (CVE-2021-21353)
+# =============================================================================
+
+PUG_PRETTY = BenchmarkConfig(
+    id="pug_pretty",
+    name="Pug template injection via pretty option",
+    repo="https://github.com/pugjs/pug",
+    language=Language.JAVASCRIPT,
+    vuln_type=VulnType.TEMPLATE_INJECTION,
+    advisory="CVE-2021-21353",
+    cwe="CWE-94",
+    
+    sources=[
+        SourceSpec(
+            kind="template_option",
+            pattern="pretty:",
+            description="Pretty option in pug.compile() options",
+        ),
+    ],
+    
+    sinks=[
+        SinkSpec(
+            kind="code_generation",
+            pattern="pug_indent.push",
+            description="Code generation concatenating pretty value",
+        ),
+    ],
+    
+    sanitizers=[
+        SanitizerSpec(
+            pattern="/^\\s+$/",
+            description="Whitespace-only validation regex",
+        ),
+        SanitizerSpec(
+            pattern="stringify(",
+            description="Proper escaping via stringify()",
+        ),
+    ],
+    
+    target_files=[
+        "packages/pug-code-gen/index.js",
+    ],
+    
+    revisions=[
+        RevisionSpec(
+            tag="pug@3.0.0",
+            expected_vulnerable=True,
+            notes="Pretty option not sanitized - allows code injection",
+        ),
+        RevisionSpec(
+            tag="pug@3.0.1",
+            expected_vulnerable=False,
+            notes="Added whitespace validation and stringify() escaping",
+        ),
+    ],
+)
+
+
 def register_all_benchmarks() -> None:
     """Register all benchmark configurations."""
     register_benchmark(UNDICI_CRLF)
@@ -467,6 +526,7 @@ def register_all_benchmarks() -> None:
     register_benchmark(LARAVEL_IGNITION)
     register_benchmark(HANDLEBARS_LOOKUP)
     register_benchmark(NODEMAILER_SENDMAIL)
+    register_benchmark(PUG_PRETTY)
 
 
 # Auto-register when module is imported

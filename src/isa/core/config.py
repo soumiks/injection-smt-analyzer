@@ -29,6 +29,7 @@ class VulnType(Enum):
     JNDI_INJECTION = "jndi-injection"
     CODE_INJECTION = "code-injection"
     PROTOTYPE_POLLUTION = "prototype-pollution"
+    TEMPLATE_INJECTION = "template-injection"
 
 
 @dataclass(frozen=True)
