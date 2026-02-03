@@ -30,6 +30,7 @@ class VulnType(Enum):
     CODE_INJECTION = "code-injection"
     PROTOTYPE_POLLUTION = "prototype-pollution"
     TEMPLATE_INJECTION = "template-injection"
+    SSRF = "ssrf"
 
 
 @dataclass(frozen=True)

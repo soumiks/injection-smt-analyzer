@@ -627,6 +627,61 @@ YARGS_PARSER = BenchmarkConfig(
 )
 
 
+# =============================================================================
+# Benchmark: Axios SSRF (CVE-2020-28168)
+# =============================================================================
+
+AXIOS_SSRF = BenchmarkConfig(
+    id="axios_ssrf",
+    name="Axios SSRF via proxy bypass on redirect",
+    repo="https://github.com/axios/axios",
+    language=Language.JAVASCRIPT,
+    vuln_type=VulnType.SSRF,
+    advisory="CVE-2020-28168",
+    cwe="CWE-918",
+    
+    sources=[
+        SourceSpec(
+            kind="http_request",
+            pattern="axios({...})",
+            description="HTTP request with proxy configuration",
+        ),
+    ],
+    
+    sinks=[
+        SinkSpec(
+            kind="http_redirect",
+            pattern="http.request",
+            description="HTTP redirect that bypasses proxy",
+        ),
+    ],
+    
+    sanitizers=[
+        SanitizerSpec(
+            pattern="beforeRedirect",
+            description="Callback to re-apply proxy settings on redirects",
+        ),
+    ],
+    
+    target_files=[
+        "lib/adapters/http.js",
+    ],
+    
+    revisions=[
+        RevisionSpec(
+            tag="v0.21.0",
+            expected_vulnerable=True,
+            notes="Proxy settings not applied to redirects - allows SSRF",
+        ),
+        RevisionSpec(
+            tag="v0.21.1",
+            expected_vulnerable=False,
+            notes="Added beforeRedirect callback to re-apply proxy",
+        ),
+    ],
+)
+
+
 def register_all_benchmarks() -> None:
     """Register all benchmark configurations."""
     register_benchmark(UNDICI_CRLF)
@@ -639,6 +694,7 @@ def register_all_benchmarks() -> None:
     register_benchmark(PUG_PRETTY)
     register_benchmark(JSON5_PROTO)
     register_benchmark(YARGS_PARSER)
+    register_benchmark(AXIOS_SSRF)
 
 
 # Auto-register when module is imported
