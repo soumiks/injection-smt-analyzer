@@ -230,11 +230,71 @@ LOG4J_JNDI = BenchmarkConfig(
 )
 
 
+# =============================================================================
+# Benchmark: Spring Framework data binding injection (CVE-2022-22965 / Spring4Shell)
+# =============================================================================
+
+SPRING4SHELL = BenchmarkConfig(
+    id="spring4shell",
+    name="Spring Framework data binding injection (Spring4Shell)",
+    repo="https://github.com/spring-projects/spring-framework",
+    language=Language.JAVA,
+    vuln_type=VulnType.CODE_INJECTION,
+    advisory="CVE-2022-22965",
+    cwe="CWE-94",
+    
+    sources=[
+        SourceSpec(
+            kind="http_parameter",
+            pattern="param:*",
+            description="HTTP request parameters bound to objects",
+        ),
+    ],
+    
+    sinks=[
+        SourceSpec(
+            kind="property_setter",
+            pattern="call:setProperty",
+            description="Property setter via data binding",
+        ),
+    ],
+    
+    sanitizers=[
+        SanitizerSpec(
+            pattern="ClassLoader.class.isAssignableFrom",
+            description="ClassLoader type blocking",
+        ),
+        SanitizerSpec(
+            pattern="ProtectionDomain.class.isAssignableFrom",
+            description="ProtectionDomain type blocking",
+        ),
+    ],
+    
+    target_files=[
+        "spring-beans/src/main/java/org/springframework/beans/CachedIntrospectionResults.java",
+    ],
+    
+    revisions=[
+        RevisionSpec(
+            tag="v5.3.17",
+            expected_vulnerable=True,
+            notes="No ClassLoader/ProtectionDomain blocking - Spring4Shell vulnerable",
+        ),
+        RevisionSpec(
+            tag="v5.3.18",
+            expected_vulnerable=False,
+            notes="Added ClassLoader/ProtectionDomain type blocking",
+        ),
+    ],
+)
+
+
 def register_all_benchmarks() -> None:
     """Register all benchmark configurations."""
     register_benchmark(UNDICI_CRLF)
     register_benchmark(DJANGO_SQL)
     register_benchmark(LOG4J_JNDI)
+    register_benchmark(SPRING4SHELL)
 
 
 # Auto-register when module is imported
