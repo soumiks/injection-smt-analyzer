@@ -572,6 +572,61 @@ JSON5_PROTO = BenchmarkConfig(
 )
 
 
+# =============================================================================
+# Benchmark: yargs-parser prototype pollution (CVE-2020-7608)
+# =============================================================================
+
+YARGS_PARSER = BenchmarkConfig(
+    id="yargs_parser",
+    name="yargs-parser prototype pollution via __proto__",
+    repo="https://github.com/yargs/yargs-parser",
+    language=Language.JAVASCRIPT,
+    vuln_type=VulnType.PROTOTYPE_POLLUTION,
+    advisory="CVE-2020-7608",
+    cwe="CWE-1321",
+    
+    sources=[
+        SourceSpec(
+            kind="command_line_args",
+            pattern="process.argv",
+            description="Command-line arguments parsed by yargs",
+        ),
+    ],
+    
+    sinks=[
+        SinkSpec(
+            kind="property_assignment",
+            pattern="o[key]",
+            description="Direct property assignment in setKey()",
+        ),
+    ],
+    
+    sanitizers=[
+        SanitizerSpec(
+            pattern="sanitizeKey",
+            description="Key sanitization replacing __proto__",
+        ),
+    ],
+    
+    target_files=[
+        "index.js",
+    ],
+    
+    revisions=[
+        RevisionSpec(
+            tag="v18.1.0",
+            expected_vulnerable=True,
+            notes="No key sanitization - allows __proto__ pollution",
+        ),
+        RevisionSpec(
+            tag="v18.1.1",
+            expected_vulnerable=False,
+            notes="Added sanitizeKey() to replace __proto__",
+        ),
+    ],
+)
+
+
 def register_all_benchmarks() -> None:
     """Register all benchmark configurations."""
     register_benchmark(UNDICI_CRLF)
@@ -583,6 +638,7 @@ def register_all_benchmarks() -> None:
     register_benchmark(NODEMAILER_SENDMAIL)
     register_benchmark(PUG_PRETTY)
     register_benchmark(JSON5_PROTO)
+    register_benchmark(YARGS_PARSER)
 
 
 # Auto-register when module is imported

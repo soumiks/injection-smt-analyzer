@@ -81,7 +81,7 @@ def _cmd_analyze(args) -> int:
     output = args.output
 
     # Legacy mode: use the old provers for backward compatibility
-    if mode == "legacy" or benchmark_id in ("undici_crlf", "django_sql", "log4j_jndi", "spring4shell", "laravel_ignition", "handlebars_lookup", "nodemailer_sendmail", "pug_pretty", "json5_proto"):
+    if mode == "legacy" or benchmark_id in ("undici_crlf", "django_sql", "log4j_jndi", "spring4shell", "laravel_ignition", "handlebars_lookup", "nodemailer_sendmail", "pug_pretty", "json5_proto", "yargs_parser"):
         return _legacy_analyze(benchmark_id, rev, mode if mode != "legacy" else "prove", output)
 
     # New framework mode
@@ -199,6 +199,18 @@ def _legacy_analyze(benchmark_id: str, rev: str, mode: str, output: str) -> int:
     
     if benchmark_id == "json5_proto":
         from isa.benchmarks.json5_proto_proof import prove_witness
+        
+        w = prove_witness(rev)
+        if w is None:
+            result = {"ok": True, "vulnerable": False, "rev": rev}
+        else:
+            result = {"ok": True, "vulnerable": True, "witness": w.to_dict()}
+        
+        _print_result(result, output)
+        return 0
+    
+    if benchmark_id == "yargs_parser":
+        from isa.benchmarks.yargs_parser_proof import prove_witness
         
         w = prove_witness(rev)
         if w is None:
