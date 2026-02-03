@@ -344,6 +344,65 @@ LARAVEL_IGNITION = BenchmarkConfig(
 )
 
 
+# =============================================================================
+# Benchmark: Handlebars.js prototype pollution (CVE-2019-19919)
+# =============================================================================
+
+HANDLEBARS_LOOKUP = BenchmarkConfig(
+    id="handlebars_lookup",
+    name="Handlebars.js prototype pollution via lookup",
+    repo="https://github.com/handlebars-lang/handlebars.js",
+    language=Language.JAVASCRIPT,
+    vuln_type=VulnType.PROTOTYPE_POLLUTION,
+    advisory="CVE-2019-19919",
+    cwe="CWE-1321",
+    
+    sources=[
+        SourceSpec(
+            kind="template_input",
+            pattern="{{lookup",
+            description="Handlebars template with lookup helper",
+        ),
+    ],
+    
+    sinks=[
+        SinkSpec(
+            kind="property_access",
+            pattern="obj[field]",
+            description="Dynamic property access in lookup helper",
+        ),
+    ],
+    
+    sanitizers=[
+        SanitizerSpec(
+            pattern="field === 'constructor'",
+            description="Constructor property blocking",
+        ),
+        SanitizerSpec(
+            pattern="propertyIsEnumerable",
+            description="Enumerable property check",
+        ),
+    ],
+    
+    target_files=[
+        "lib/handlebars/helpers/lookup.js",
+    ],
+    
+    revisions=[
+        RevisionSpec(
+            tag="v4.0.13",
+            expected_vulnerable=True,
+            notes="No constructor blocking in lookup helper",
+        ),
+        RevisionSpec(
+            tag="v4.0.14",
+            expected_vulnerable=False,
+            notes="Added constructor blocking via propertyIsEnumerable",
+        ),
+    ],
+)
+
+
 def register_all_benchmarks() -> None:
     """Register all benchmark configurations."""
     register_benchmark(UNDICI_CRLF)
@@ -351,6 +410,7 @@ def register_all_benchmarks() -> None:
     register_benchmark(LOG4J_JNDI)
     register_benchmark(SPRING4SHELL)
     register_benchmark(LARAVEL_IGNITION)
+    register_benchmark(HANDLEBARS_LOOKUP)
 
 
 # Auto-register when module is imported

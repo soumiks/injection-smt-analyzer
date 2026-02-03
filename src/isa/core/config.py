@@ -28,6 +28,7 @@ class VulnType(Enum):
     PATH_TRAVERSAL = "path-traversal"
     JNDI_INJECTION = "jndi-injection"
     CODE_INJECTION = "code-injection"
+    PROTOTYPE_POLLUTION = "prototype-pollution"
 
 
 @dataclass(frozen=True)
