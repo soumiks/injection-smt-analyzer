@@ -1,57 +1,154 @@
+"""
+Command-line interface for injection-smt-analyzer.
+"""
+
 import argparse
 import json
+import sys
+from typing import Optional
 
-from isa.benchmarks.undici_crlf import demo_witness
-from isa.benchmarks.undici_crlf_proof import prove_witness
+# Import benchmark definitions to register them
+import isa.benchmarks.definitions  # noqa: F401
+
+from isa.core.config import list_benchmarks
 
 
-def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(prog="isa", description="injection-smt-analyzer")
+VERSION = "0.2.0"
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="isa",
+        description="injection-smt-analyzer: Static analysis for injection vulnerabilities using SMT/Z3",
+    )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    sub.add_parser("version", help="print version")
+    # Version command
+    sub.add_parser("version", help="Print version")
 
-    p_analyze = sub.add_parser("analyze", help="run analyzer")
+    # List command
+    sub.add_parser("list", help="List available benchmarks")
+
+    # Analyze command
+    p_analyze = sub.add_parser("analyze", help="Analyze a benchmark")
     p_analyze.add_argument(
-        "--benchmark",
+        "--benchmark", "-b",
         required=True,
-        choices=["undici_crlf"],
-        help="Benchmark target (temporary; will expand)",
+        help="Benchmark ID (use 'isa list' to see available)",
     )
     p_analyze.add_argument(
-        "--rev",
-        default="v5.8.0",
-        help="Target revision/tag for analysis (default: v5.8.0)",
+        "--rev", "-r",
+        required=True,
+        help="Git revision/tag to analyze",
     )
     p_analyze.add_argument(
-        "--mode",
+        "--mode", "-m",
         default="prove",
-        choices=["prove", "demo"],
-        help="prove=SMT+Z3-backed (best effort), demo=placeholder witness",
+        choices=["prove", "demo", "legacy"],
+        help="Analysis mode: prove (full), demo (placeholder), legacy (old prover)",
+    )
+    p_analyze.add_argument(
+        "--output", "-o",
+        choices=["json", "pretty", "summary"],
+        default="pretty",
+        help="Output format",
     )
 
     args = parser.parse_args(argv)
 
     if args.cmd == "version":
-        print("0.0.1")
+        print(VERSION)
+        return 0
+
+    if args.cmd == "list":
+        benchmarks = list_benchmarks()
+        print("Available benchmarks:")
+        for b in benchmarks:
+            print(f"  - {b}")
         return 0
 
     if args.cmd == "analyze":
-        if args.benchmark == "undici_crlf":
-            if args.mode == "demo":
-                w = demo_witness(args.rev)
-                print(json.dumps(w.to_dict(), indent=2, sort_keys=True))
-                return 0
+        return _cmd_analyze(args)
 
-            w = prove_witness(args.rev)
+    return 1
+
+
+def _cmd_analyze(args) -> int:
+    """Handle the analyze command."""
+    benchmark_id = args.benchmark
+    rev = args.rev
+    mode = args.mode
+    output = args.output
+
+    # Legacy mode: use the old provers for backward compatibility
+    if mode == "legacy" or benchmark_id in ("undici_crlf", "django_sql"):
+        return _legacy_analyze(benchmark_id, rev, mode if mode != "legacy" else "prove", output)
+
+    # New framework mode
+    from isa.analyzer import get_analyzer
+    
+    analyzer = get_analyzer()
+    result = analyzer.analyze(benchmark_id, rev, mode)
+    
+    _print_result(result, output)
+    return 0 if result.get("ok") else 1
+
+
+def _legacy_analyze(benchmark_id: str, rev: str, mode: str, output: str) -> int:
+    """Use the legacy provers for backward compatibility."""
+    if benchmark_id == "undici_crlf":
+        from isa.benchmarks.undici_crlf import demo_witness
+        from isa.benchmarks.undici_crlf_proof import prove_witness
+        
+        if mode == "demo":
+            w = demo_witness(rev)
+            result = {"ok": True, "mode": "demo", "witness": w.to_dict()}
+        else:
+            w = prove_witness(rev)
             if w is None:
-                print(json.dumps({"ok": True, "vulnerable": False, "rev": args.rev}, indent=2, sort_keys=True))
-                return 0
+                result = {"ok": True, "vulnerable": False, "rev": rev}
+            else:
+                result = {"ok": True, "vulnerable": True, "witness": w.to_dict()}
+        
+        _print_result(result, output)
+        return 0
+    
+    if benchmark_id == "django_sql":
+        from isa.benchmarks.django_sql_proof import prove_witness
+        
+        w = prove_witness(rev)
+        if w is None:
+            result = {"ok": True, "vulnerable": False, "rev": rev}
+        else:
+            result = {"ok": True, "vulnerable": True, "witness": w.to_dict()}
+        
+        _print_result(result, output)
+        return 0
+    
+    print(f"Error: Legacy mode not available for benchmark: {benchmark_id}", file=sys.stderr)
+    return 1
 
-            print(json.dumps({"ok": True, "vulnerable": True, "witness": w.to_dict()}, indent=2, sort_keys=True))
-            return 0
 
-    raise AssertionError("unreachable")
+def _print_result(result: dict, output: str) -> None:
+    """Print analysis result in the specified format."""
+    if output == "json":
+        print(json.dumps(result, indent=2, sort_keys=True))
+    elif output == "summary":
+        ok = result.get("ok", False)
+        vulnerable = result.get("vulnerable", "unknown")
+        if ok:
+            status = "VULNERABLE" if vulnerable else "NOT VULNERABLE"
+            print(f"Result: {status}")
+            if "reason" in result:
+                print(f"Reason: {result['reason']}")
+            if "witness" in result and vulnerable:
+                w = result["witness"]
+                print(f"Vuln: {w.get('vuln', {}).get('kind', 'unknown')}")
+                print(f"Advisory: {w.get('vuln', {}).get('advisory', 'N/A')}")
+        else:
+            print(f"Error: {result.get('error', 'Unknown error')}")
+    else:  # pretty (default)
+        print(json.dumps(result, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

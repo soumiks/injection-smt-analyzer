@@ -149,11 +149,9 @@ class TestCLI:
     def test_cli_analyze_demo_mode(self):
         """CLI analyze in demo mode should work."""
         from isa.cli import main
-        import io
-        import sys
 
         # This just checks it doesn't crash
-        result = main(["analyze", "--benchmark", "undici_crlf", "--mode", "demo"])
+        result = main(["analyze", "--benchmark", "undici_crlf", "--rev", "v5.8.0", "--mode", "demo"])
         assert result == 0
 
     def test_cli_analyze_prove_mode_vulnerable(self):
