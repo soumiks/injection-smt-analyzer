@@ -11,3 +11,9 @@ dist/
 .DS_Store
 *.log
 .isa_cache/
+
+# Ignore cloned benchmark repos
+benchmarks/*/*_vuln/
+benchmarks/*/*_fixed/
+benchmarks/*/pug_vuln/
+benchmarks/*/pug_fixed/
