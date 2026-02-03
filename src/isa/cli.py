@@ -81,7 +81,7 @@ def _cmd_analyze(args) -> int:
     output = args.output
 
     # Legacy mode: use the old provers for backward compatibility
-    if mode == "legacy" or benchmark_id in ("undici_crlf", "django_sql", "log4j_jndi", "spring4shell"):
+    if mode == "legacy" or benchmark_id in ("undici_crlf", "django_sql", "log4j_jndi", "spring4shell", "laravel_ignition"):
         return _legacy_analyze(benchmark_id, rev, mode if mode != "legacy" else "prove", output)
 
     # New framework mode
@@ -139,6 +139,18 @@ def _legacy_analyze(benchmark_id: str, rev: str, mode: str, output: str) -> int:
     
     if benchmark_id == "spring4shell":
         from isa.benchmarks.spring4shell_proof import prove_witness
+        
+        w = prove_witness(rev)
+        if w is None:
+            result = {"ok": True, "vulnerable": False, "rev": rev}
+        else:
+            result = {"ok": True, "vulnerable": True, "witness": w.to_dict()}
+        
+        _print_result(result, output)
+        return 0
+    
+    if benchmark_id == "laravel_ignition":
+        from isa.benchmarks.laravel_ignition_proof import prove_witness
         
         w = prove_witness(rev)
         if w is None:

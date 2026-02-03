@@ -289,12 +289,68 @@ SPRING4SHELL = BenchmarkConfig(
 )
 
 
+# =============================================================================
+# Benchmark: Laravel Ignition code injection (CVE-2021-3129)
+# =============================================================================
+
+LARAVEL_IGNITION = BenchmarkConfig(
+    id="laravel_ignition",
+    name="Laravel Ignition code injection",
+    repo="https://github.com/facade/ignition",
+    language=Language.PHP,
+    vuln_type=VulnType.CODE_INJECTION,
+    advisory="CVE-2021-3129",
+    cwe="CWE-94",
+    
+    sources=[
+        SourceSpec(
+            kind="http_parameter",
+            pattern="param:viewFile",
+            description="viewFile parameter from HTTP request",
+        ),
+    ],
+    
+    sinks=[
+        SinkSpec(
+            kind="file_operation",
+            pattern="call:file_get_contents",
+            description="file_get_contents on unsanitized path",
+        ),
+    ],
+    
+    sanitizers=[
+        SanitizerSpec(
+            pattern="isSafePath",
+            description="Path validation blocking stream wrappers",
+        ),
+    ],
+    
+    target_files=[
+        "src/Solutions/MakeViewVariableOptionalSolution.php",
+    ],
+    
+    revisions=[
+        RevisionSpec(
+            tag="2.5.1",
+            expected_vulnerable=True,
+            notes="No path validation - allows stream wrappers",
+        ),
+        RevisionSpec(
+            tag="2.5.2",
+            expected_vulnerable=False,
+            notes="Added isSafePath() validation",
+        ),
+    ],
+)
+
+
 def register_all_benchmarks() -> None:
     """Register all benchmark configurations."""
     register_benchmark(UNDICI_CRLF)
     register_benchmark(DJANGO_SQL)
     register_benchmark(LOG4J_JNDI)
     register_benchmark(SPRING4SHELL)
+    register_benchmark(LARAVEL_IGNITION)
 
 
 # Auto-register when module is imported
